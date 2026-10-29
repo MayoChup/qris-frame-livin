@@ -342,7 +342,7 @@ function layout(){
   } else if (size === 'A5'){                       // A4 mendatar, 2 sel 148.5 x 210
     const cw=148.5, h=210, w=h*AR;
     if (dup) items.forEach(it=>pages.push({orient:'l',W:297,H:210,slots:[{item:it,x:cw-w,y:0,w,h},{item:it,x:cw,y:0,w,h}],folds:[{x:cw,y1:0,y2:h}]}));
-    else for (let i=0;i<items.length;i+=2){ const s=[{item:items[i],x:0,y:0,w,h}]; if(items[i+1]) s.push({item:items[i+1],x:297-w,y:0,w,h}); pages.push({orient:'l',W:297,H:210,slots:s,folds:[]}); }
+    else for (let i=0;i<items.length;i+=2){ const s=[{item:items[i],x:cw-w,y:0,w,h}]; if(items[i+1]) s.push({item:items[i+1],x:cw,y:0,w,h}); pages.push({orient:'l',W:297,H:210,slots:s,folds:[]}); }
   } else {                                         // A6: A4 tegak, 4 sel 105 x 148.5
     const cw=105, ch=148.5, h=ch, w=h*AR;
     if (dup){
@@ -350,14 +350,27 @@ function layout(){
         [items[i],items[i+1]].forEach((it,r)=>{ if(!it) return; const y=r*ch; pg.slots.push({item:it,x:cw-w,y,w,h},{item:it,x:cw,y,w,h}); pg.folds.push({x:cw,y1:y,y2:y+h}); });
         pages.push(pg); }
     } else {
-      const pos=[[0,0],[210-w,0],[0,ch],[210-w,ch]];
+      const pos=[[cw-w,0],[cw,0],[cw-w,ch],[cw,ch]];
       for (let i=0;i<items.length;i+=4){ const pg={orient:'p',W:210,H:297,slots:[],folds:[]};
         for (let k=0;k<4;k++){ const it=items[i+k]; if(it) pg.slots.push({item:it,x:pos[k][0],y:pos[k][1],w,h}); }
         pages.push(pg); }
     }
   }
+  pages.forEach(addCuts);
   return pages;
 }
+
+// Garis potong: sisi yang menempel antara dua QRIS berbeda (lipatan bolak-balik tidak dihitung)
+function addCuts(pg){
+  const cuts=[], E=0.01, sl=pg.slots;
+  for (let i=0;i<sl.length;i++) for (let j=0;j<sl.length;j++){
+    const a=sl[i], b=sl[j]; if (i===j || a.item===b.item) continue;
+    if (Math.abs(a.x+a.w-b.x)<E){ const y1=Math.max(a.y,b.y), y2=Math.min(a.y+a.h,b.y+b.h); if(y2-y1>E) cuts.push({x1:b.x,y1,x2:b.x,y2}); }
+    if (Math.abs(a.y+a.h-b.y)<E){ const x1=Math.max(a.x,b.x), x2=Math.min(a.x+a.w,b.x+b.w); if(x2-x1>E) cuts.push({x1,y1:b.y,x2,y2:b.y}); }
+  }
+  pg.cuts = cuts;
+}
+const CUT_MM = 0.5;   // tebal garis potong putih
 
 /* ===== PDF (pdf-lib) ===== */
 async function buildPdf(pages, title, onStep){
@@ -376,6 +389,7 @@ async function buildPdf(pages, title, onStep){
       }
       page.drawImage(cache.get(s.item.id), {x:s.x*MM2PT, y:(pg.H-s.y-s.h)*MM2PT, width:s.w*MM2PT, height:s.h*MM2PT});
     }
+    (pg.cuts||[]).forEach(c=>page.drawLine({start:{x:c.x1*MM2PT,y:(pg.H-c.y1)*MM2PT}, end:{x:c.x2*MM2PT,y:(pg.H-c.y2)*MM2PT}, thickness:CUT_MM*MM2PT, color:rgb(1,1,1)}));
     pg.folds.forEach(f=>page.drawLine({start:{x:f.x*MM2PT,y:(pg.H-f.y1)*MM2PT}, end:{x:f.x*MM2PT,y:(pg.H-f.y2)*MM2PT}, thickness:1, color:rgb(.25,.25,.25), dashArray:[6,4.5]}));
     if (onStep){ onStep(p+1); await tick(); }
   }
@@ -437,10 +451,10 @@ $('fmt').addEventListener('click', e=>{ const b=e.target.closest('button'); if(!
 
 const HINTS = {
   A4:  'QRIS ukuran penuh A4, 1 QRIS per lembar. Bolak-balik tidak tersedia untuk A4 karena butuh kertas A3.',
-  A5:  'Kertas A4 diputar mendatar, muat 2 QRIS. Kalau jumlahnya ganjil, setengah kertas yang kosong tetap utuh ukuran A5.',
+  A5:  'Kertas A4 diputar mendatar, muat 2 QRIS yang dirapatkan di tengah. Gunting di garis putih di antaranya.',
   A5d: 'Kertas A4 mendatar, 1 QRIS bolak-balik per lembar. Lipat di garis putus-putus.',
-  A6:  'Muat 4 QRIS per lembar A4. QRIS ditaruh mepet pojok, jadi sisa kertasnya tetap berbentuk A6 / A5.',
-  A6d: 'Muat 2 QRIS bolak-balik per lembar A4. Potong jadi dua (atas & bawah), lalu lipat di garis putus-putus.'
+  A6:  'Muat 4 QRIS per lembar A4, dirapatkan tanpa jarak. Gunting di garis putih di antara QRIS.',
+  A6d: 'Muat 2 QRIS bolak-balik per lembar A4. Gunting di garis putih (atas & bawah), lalu lipat di garis putus-putus.'
 };
 
 const collator = new Intl.Collator('id', {numeric:true, sensitivity:'base'});
@@ -501,6 +515,8 @@ function drawSheet(pg){
   const sc = 3, c = document.createElement('canvas'); c.width=pg.W*sc; c.height=pg.H*sc;
   const x = c.getContext('2d'); x.fillStyle='#fff'; x.fillRect(0,0,c.width,c.height); x.imageSmoothingQuality='high';
   pg.slots.forEach(s=>x.drawImage(s.item.thumb, s.x*sc, s.y*sc, s.w*sc, s.h*sc));
+  x.strokeStyle='#fff'; x.lineWidth=Math.max(1.5, CUT_MM*sc); x.setLineDash([]);
+  (pg.cuts||[]).forEach(c=>{ x.beginPath(); x.moveTo(c.x1*sc,c.y1*sc); x.lineTo(c.x2*sc,c.y2*sc); x.stroke(); });
   x.strokeStyle='#2a2a2a'; x.lineWidth=1.4; x.setLineDash([7,5]);
   pg.folds.forEach(f=>{ x.beginPath(); x.moveTo(f.x*sc,f.y1*sc); x.lineTo(f.x*sc,f.y2*sc); x.stroke(); });
   return c;

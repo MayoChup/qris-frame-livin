@@ -212,7 +212,7 @@ button,input{font:inherit;color:inherit}
       <h2><span class="n">3</span>Download</h2>
       <span class="lbl" style="margin-top:0">Mau download apa?</span>
       <div class="pill" id="fmt" role="group" aria-label="Jenis file">
-        <button data-v="pdf" aria-pressed="true">PDF siap print</button><button data-v="png" aria-pressed="false">Gambar PNG</button><button data-v="both" aria-pressed="false">Keduanya</button>
+        <button data-v="png" aria-pressed="true">Gambar PNG</button><button data-v="pdf" aria-pressed="false">PDF siap print</button><button data-v="both" aria-pressed="false">Keduanya</button>
       </div>
       <span class="lbl">Yang didownload</span>
       <div class="pill" id="scope" role="group" aria-label="Cakupan">
@@ -227,7 +227,7 @@ button,input{font:inherit;color:inherit}
   <main class="mat" id="mat">
     <div class="matbar" id="matbar" hidden>
       <div class="mtabs" id="tab" role="group" aria-label="Tampilan">
-        <button data-v="pages" aria-pressed="true"><b>PDF siap print</b> <span class="tsub">kertas A4</span></button><button data-v="items" aria-pressed="false"><b>Gambar per QRIS</b> <span class="tsub">PNG</span></button>
+        <button data-v="items" aria-pressed="true"><b>Gambar per QRIS</b> <span class="tsub">PNG</span></button><button data-v="pages" aria-pressed="false"><b>PDF siap print</b> <span class="tsub">kertas A4</span></button>
       </div>
       <span class="ruler" id="ruler"></span>
       <span class="sp"></span>
@@ -259,7 +259,7 @@ const PH = {l:0.0826247, t:0.1273933, w:0.8370604, h:0.8168285};   // area QRIS 
 const MM2PT = 72/25.4, MAX_BASE = 150;
 const CARD_AR = (PH.w*FRAME_W)/(PH.h*FRAME_H);                  // rasio kartu QRIS standar
 
-const S = { items:[], size:'A5', duplex:false, fmt:'pdf', scope:'all', tab:'pages', sort:'upload', selPages:new Set(), selItems:new Set() };
+const S = { items:[], size:'A5', duplex:false, fmt:'png', scope:'all', tab:'items', sort:'upload', selPages:new Set(), selItems:new Set() };
 let bgImg = null, uid = 0;
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));

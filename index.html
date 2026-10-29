@@ -115,7 +115,7 @@ button,input{font:inherit;color:inherit}
 .ruler{font-size:12px;color:#9FC0B4;letter-spacing:.02em}
 
 .sheets{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:30px 26px;align-items:start}
-.sheet{display:flex;flex-direction:column;gap:9px}
+.sheet{display:flex;flex-direction:column;gap:9px;min-width:0}
 .paper{position:relative;background:#fff;box-shadow:0 1px 0 rgba(0,0,0,.25), 0 14px 28px -10px rgba(0,0,0,.55);transition:transform .15s, box-shadow .15s;cursor:pointer}
 .paper canvas{display:block;width:100%;height:auto}
 .sheet.sel .paper{box-shadow:0 0 0 3px var(--yellow), 0 14px 28px -10px rgba(0,0,0,.55)}
@@ -153,6 +153,67 @@ button,input{font:inherit;color:inherit}
 .help .wa{width:36px;height:36px;border-radius:50%;background:#25D366;display:grid;place-items:center;flex:none}
 .help small{display:block;font-weight:500;color:var(--muted);font-size:11.5px}
 @media (max-width:600px){.help{right:12px;bottom:12px;padding:6px 12px 6px 6px;font-size:12.5px}.help .wa{width:32px;height:32px}}
+
+.mob{display:none}
+.mbar{display:none}
+/* ================= HP ================= */
+@media (max-width:760px){
+  body{font-size:15px}
+  .top .in{padding:14px 16px 14px;gap:8px}
+  .brand{font-size:30px}
+  .top .priv{display:none}
+  .dsk{display:none}.mob{display:inline}
+  .app{display:flex;flex-direction:column;min-height:0}
+  .ctrl{display:contents}
+  .ctrl .step{padding:18px 16px 0;margin:0}
+  #stUpload{order:1;padding-bottom:4px}
+  #stSize{order:2;padding-bottom:20px}
+  .mat{order:3}
+  #stDl{padding-top:22px}
+  #stDl{order:4;padding-bottom:150px}
+  .drop{padding:14px}
+  .drop .ic{width:52px;height:52px}
+  .tile{padding:12px 6px 10px;min-height:96px}
+  .pill button{padding:11px 4px;font-size:13.5px}
+  .mat{padding:16px 12px 22px;min-height:0}
+  .matbar{gap:10px;margin-bottom:12px}
+  .mtabs{width:100%}
+  .mtabs button{flex:1;padding:10px 6px;font-size:13.5px;display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1.15}
+  .mtabs .tsub{margin:0;font-size:11.5px}
+  .ruler{order:5;width:100%}
+  .matbar .sp{display:none}
+  .sortsel{flex:1}
+  .sortsel select{flex:1;padding:10px 30px 10px 11px}
+  .chkall{padding:8px 0}
+  .mat-note{margin:0 0 14px;font-size:12.5px}
+  .cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .card{padding:6px;gap:6px;border-radius:12px}
+  .card .nmin{font-size:13px;padding:8px}
+  .card .row{flex-wrap:nowrap}
+  .card .ck{font-size:12.5px}
+  .card .dl{padding:8px 10px}
+  .rm{width:34px;height:34px}
+  .sheets{grid-template-columns:minmax(0,1fr);gap:22px}
+  .sheet .dl{padding:9px 12px}
+  .empty{min-height:250px;padding:22px 16px;border-radius:16px}
+  .empty .ghost{width:84px}
+  .empty h3{font-size:21px}
+  .empty p{font-size:13.5px}
+  .mbar:not([hidden]){display:flex}
+  .mbar{position:fixed;left:0;right:0;bottom:0;z-index:16;background:#fff;border-top:1px solid var(--line);box-shadow:0 -6px 20px rgba(0,0,0,.12);padding:10px 12px calc(10px + env(safe-area-inset-bottom));gap:10px;align-items:center}
+  .mb-info{flex:1;min-width:0;line-height:1.25}
+  .mb-info b{display:block;font-size:14px}
+  .mb-info span{display:block;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mb-go{border:0;border-radius:12px;background:var(--navy);color:#fff;font-weight:700;font-size:15px;padding:13px 20px;cursor:pointer}
+  .mb-go:disabled{opacity:.4}
+  .help{bottom:calc(84px + env(safe-area-inset-bottom));right:12px;padding:5px;gap:0}
+  .help .ht{display:none}
+  .help .wa{width:44px;height:44px}
+  body:not(.has-items) .help{bottom:16px;padding:6px 12px 6px 6px;gap:8px}
+  body:not(.has-items) .help .ht{display:block;font-size:12.5px}
+  body:not(.has-items) .help .wa{width:34px;height:34px}
+  .toast{bottom:calc(90px + env(safe-area-inset-bottom));min-width:0;width:calc(100vw - 32px)}
+}
 /* progress toast */
 .toast{position:fixed;left:50%;bottom:80px;transform:translate(-50%,20px);opacity:0;pointer-events:none;background:var(--navy);color:#fff;border-radius:14px;padding:13px 18px 12px;min-width:290px;max-width:calc(100vw - 32px);box-shadow:0 12px 30px rgba(0,0,0,.35);transition:opacity .2s, transform .2s;z-index:20;font-size:14px}
 .toast.on{opacity:1;transform:translate(-50%,0)}
@@ -173,17 +234,17 @@ button,input{font:inherit;color:inherit}
 
 <div class="app">
   <aside class="ctrl">
-    <section class="step">
+    <section class="step" id="stUpload">
       <h2><span class="n">1</span>Upload QRIS</h2>
       <label class="drop" id="drop">
         <input type="file" id="file" accept="image/*" multiple hidden>
         <span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0E2A47" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M6 10l6-6 6 6"/><path d="M4 20h16"/></svg></span>
-        <span><b>Pilih gambar QRIS</b><span>Bisa banyak sekaligus, tarik ke sini, atau paste</span></span>
+        <span><b>Pilih gambar QRIS</b><span class="dsk">Bisa banyak sekaligus, tarik ke sini, atau paste</span><span class="mob">Ketuk untuk pilih dari galeri / file. Bisa banyak sekaligus.</span></span>
       </label>
       <div class="count-row"><span><strong id="cnt">0</strong> QRIS siap</span><button class="link" id="clear" disabled>Hapus semua</button></div>
     </section>
 
-    <section class="step">
+    <section class="step" id="stSize">
       <h2><span class="n">2</span>Ukuran cetak</h2>
       <div class="tiles" id="size" role="group" aria-label="Ukuran QRIS">
         <button class="tile" data-v="A4" aria-pressed="false">
@@ -208,7 +269,7 @@ button,input{font:inherit;color:inherit}
       <div class="hint" id="layoutHint"></div>
     </section>
 
-    <section class="step">
+    <section class="step" id="stDl">
       <h2><span class="n">3</span>Download</h2>
       <span class="lbl" style="margin-top:0">Mau download apa?</span>
       <div class="pill" id="fmt" role="group" aria-label="Jenis file">
@@ -243,6 +304,11 @@ button,input{font:inherit;color:inherit}
     <p class="mat-note" id="matNote" hidden></p>
     <div id="view"></div>
   </main>
+</div>
+
+<div class="mbar" id="mbar" hidden>
+  <div class="mb-info"><b id="mbTitle">–</b><span id="mbSub"></span></div>
+  <button class="mb-go" id="mbGo">Download</button>
 </div>
 
 <a class="help" href="https://wa.me/6287788494726?text=Halo%2C%20saya%20memiliki%20pertanyaan%20terkait%20bingkai%20qris%20livin%20nih" target="_blank" rel="noopener">
@@ -493,12 +559,15 @@ function render(){
     : 'Gambar QRIS + frame satu per satu (PNG), bukan format print. Nama QRIS bisa diubah di kotak nama.';
   $('selAll').checked = S.tab==='pages' ? (pages.length>0 && S.selPages.size===pages.length) : (S.items.length>0 && S.selItems.size===S.items.length);
 
+  document.body.classList.toggle('has-items', S.items.length>0);
+  $('mbar').hidden = !S.items.length;
   // preview nama file
   const btn = $('export');
   if (!S.items.length){ $('fnamePrev').textContent='Belum ada QRIS.'; btn.disabled=true; btn.textContent='Download'; return; }
   const plan = exportPlan(wibStamp());
   btn.disabled = !plan.files.length;
   const fmtName = n => { const d=n.lastIndexOf('.'); return esc(n.slice(0,d)) + `<span class="ext">${esc(n.slice(d))}</span>`; };
+  if (!plan.files.length){ syncBar(plan); }
   if (!plan.files.length){
     $('fnamePrev').textContent = S.tab==='pages' && S.fmt==='png' ? 'Centang QRIS di tab “Gambar per QRIS”.' : S.fmt==='pdf' ? 'Centang lembar yang mau didownload.' : 'Belum ada yang dicentang.';
     btn.textContent='Download';
@@ -509,8 +578,20 @@ function render(){
     $('fnamePrev').innerHTML = fmtName(plan.files[0].name);
     btn.textContent = plan.files[0].kind==='png' ? 'Download PNG' : 'Download PDF';
   }
+  syncBar(plan);
 }
 
+function syncBar(plan){
+  const n = plan.files.length, go = $('mbGo');
+  go.disabled = !n;
+  if (!n){ $('mbTitle').textContent='Belum ada yang dipilih'; $('mbSub').textContent='Centang QRIS/lembar, atau pilih “Semua”'; go.textContent='Download'; return; }
+  const kinds = S.fmt==='both' ? 'PNG + PDF' : S.fmt==='png' ? 'Gambar PNG' : `PDF A4 · QRIS ${S.size}${isDup()?' bolak-balik':''}`;
+  const pdfPages = plan.files.filter(f=>f.kind==='pdf').reduce((a,f)=>a+f.pages.length,0);
+  const pngs = plan.files.filter(f=>f.kind==='png').length;
+  $('mbTitle').textContent = kinds;
+  $('mbSub').textContent = [pngs?`${pngs} gambar`:'', pdfPages?`${pdfPages} lembar A4`:''].filter(Boolean).join(' + ') + (plan.zipName?' · ZIP':'');
+  go.textContent = plan.zipName ? 'Download ZIP' : 'Download';
+}
 function drawSheet(pg){
   const sc = 3, c = document.createElement('canvas'); c.width=pg.W*sc; c.height=pg.H*sc;
   const x = c.getContext('2d'); x.fillStyle='#fff'; x.fillRect(0,0,c.width,c.height); x.imageSmoothingQuality='high';
@@ -567,6 +648,7 @@ $('selAll').onchange = e=>{
   render();
 };
 
+$('mbGo').onclick = ()=>$('export').click();
 $('export').onclick = async ()=>{
   const stamp = wibStamp(), plan = exportPlan(stamp);
   if (!plan.files.length) return;

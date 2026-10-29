@@ -279,6 +279,13 @@ button,input{font:inherit;color:inherit}
       <div class="pill" id="scope" role="group" aria-label="Cakupan">
         <button data-v="all" aria-pressed="true">Semua</button><button data-v="sel" aria-pressed="false">Yang dicentang</button>
       </div>
+      <div id="packWrap" hidden>
+        <span class="lbl">Bentuk download</span>
+        <div class="pill" id="pack" role="group" aria-label="Bentuk download">
+          <button data-v="zip" aria-pressed="true">ZIP (1 file)</button><button data-v="sep" aria-pressed="false">Satu per satu</button>
+        </div>
+        <p class="sub" id="packHint"></p>
+      </div>
       <span class="lbl">Nama file</span>
       <div class="fname" id="fnamePrev">Belum ada QRIS.</div>
       <button class="go" id="export" disabled>Download</button>
@@ -325,7 +332,7 @@ const PH = {l:0.0826247, t:0.1273933, w:0.8370604, h:0.8168285};   // area QRIS 
 const MM2PT = 72/25.4, MAX_BASE = 150;
 const CARD_AR = (PH.w*FRAME_W)/(PH.h*FRAME_H);                  // rasio kartu QRIS standar
 
-const S = { items:[], size:'A5', duplex:false, fmt:'png', scope:'all', tab:'items', sort:'upload', selPages:new Set(), selItems:new Set() };
+const S = { items:[], size:'A5', duplex:false, fmt:'png', scope:'all', tab:'items', sort:'upload', pack:'zip', selPages:new Set(), selItems:new Set() };
 let bgImg = null, uid = 0;
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -504,7 +511,7 @@ function bind(groupId, key, conv=v=>v){
     if (key==='size'||key==='duplex') S.selPages.clear();
     render(); });
 }
-bind('size','size'); bind('duplex','duplex',v=>v==='1'); bind('scope','scope');
+bind('size','size'); bind('duplex','duplex',v=>v==='1'); bind('scope','scope'); bind('pack','pack');
 // tab preview & jenis file saling mengikuti, supaya yang dilihat = yang didownload
 $('tab').addEventListener('click', e=>{ const b=e.target.closest('button'); if(!b) return;
   S.tab=b.dataset.v; setPressed('tab', S.tab);
@@ -567,10 +574,17 @@ function render(){
   const plan = exportPlan(wibStamp());
   btn.disabled = !plan.files.length;
   const fmtName = n => { const d=n.lastIndexOf('.'); return esc(n.slice(0,d)) + `<span class="ext">${esc(n.slice(d))}</span>`; };
+  $('packWrap').hidden = !plan.zipName;
+  $('packHint').textContent = S.pack==='sep'
+    ? 'Tiap file langsung terdownload sendiri-sendiri. Kalau browser bertanya “izinkan download banyak file”, pilih Izinkan.'
+    : 'Semua file dibungkus jadi 1 file ZIP.';
   if (!plan.files.length){ syncBar(plan); }
   if (!plan.files.length){
     $('fnamePrev').textContent = S.tab==='pages' && S.fmt==='png' ? 'Centang QRIS di tab “Gambar per QRIS”.' : S.fmt==='pdf' ? 'Centang lembar yang mau didownload.' : 'Belum ada yang dicentang.';
     btn.textContent='Download';
+  } else if (plan.zipName && S.pack==='sep'){
+    $('fnamePrev').innerHTML = `<b>${plan.files.length} file terpisah</b><span class="more">${plan.files.slice(0,3).map(f=>esc(f.name)).join('<br>')}${plan.files.length>3?'<br>…':''}</span>`;
+    btn.innerHTML = `Download satu per satu <span class="bdg">${plan.files.length} file</span>`;
   } else if (plan.zipName){
     $('fnamePrev').innerHTML = fmtName(plan.zipName) + `<span class="more">Isi ZIP: ${plan.files.length} file — ${plan.files.slice(0,2).map(f=>esc(f.name)).join(', ')}${plan.files.length>2?', …':''}</span>`;
     btn.innerHTML = `Download ZIP <span class="bdg">${plan.files.length} file</span>`;
@@ -589,8 +603,8 @@ function syncBar(plan){
   const pdfPages = plan.files.filter(f=>f.kind==='pdf').reduce((a,f)=>a+f.pages.length,0);
   const pngs = plan.files.filter(f=>f.kind==='png').length;
   $('mbTitle').textContent = kinds;
-  $('mbSub').textContent = [pngs?`${pngs} gambar`:'', pdfPages?`${pdfPages} lembar A4`:''].filter(Boolean).join(' + ') + (plan.zipName?' · ZIP':'');
-  go.textContent = plan.zipName ? 'Download ZIP' : 'Download';
+  $('mbSub').textContent = [pngs?`${pngs} gambar`:'', pdfPages?`${pdfPages} lembar A4`:''].filter(Boolean).join(' + ') + (plan.zipName ? (S.pack==='sep'?' · satu per satu':' · ZIP') : '');
+  go.textContent = plan.zipName ? (S.pack==='sep'?'Download semua':'Download ZIP') : 'Download';
 }
 function drawSheet(pg){
   const sc = 3, c = document.createElement('canvas'); c.width=pg.W*sc; c.height=pg.H*sc;
@@ -654,6 +668,18 @@ $('export').onclick = async ()=>{
   if (!plan.files.length) return;
   const total = plan.files.reduce((n,f)=>n+(f.kind==='pdf'?f.pages.length:1),0); let done=0;
   try {
+    if (plan.zipName && S.pack==='sep'){
+      // langsung download per file, dibuat satu-satu supaya hemat memori
+      for (let i=0;i<plan.files.length;i++){
+        const f = plan.files[i];
+        toast(`Download ${i+1}/${plan.files.length}: ${f.name}`, i/plan.files.length); await tick();
+        const blob = f.kind==='pdf' ? await buildPdf(f.pages, f.name.replace(/\.pdf$/,'')) : await pngBlob(f.item);
+        save(blob, f.name);
+        await new Promise(r=>setTimeout(r, 700));   // jeda supaya browser tidak memblokir download beruntun
+      }
+      toastDone(`${plan.files.length} file sudah didownload`);
+      return;
+    }
     const blobs = [];
     for (const f of plan.files){
       if (f.kind==='pdf'){ const base=done; toast(`Membuat PDF… 0/${f.pages.length} lembar`, done/total);

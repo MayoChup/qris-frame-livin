@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Bingkai QRIS livin'</title>
-<meta name="description" content="Pasang frame livin' ke QRIS, lalu export PNG atau PDF A4 siap print (A4, A5, A6, bolak-balik).">
+<meta name="description" content="Pasang frame livin' ke QRIS, lalu export PNG atau PDF kertas Letter siap print (A5, A6, bolak-balik).">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -228,7 +228,7 @@ button,input{font:inherit;color:inherit}
   <div>
     <h1 class="brand">Bingkai QRIS <span class="lv">livin'</span></h1>
   </div>
-  <p>Upload QRIS, pilih ukuran cetak, lalu download PNG atau PDF A4 yang siap print, potong, dan lipat.</p>
+  <p>Upload QRIS, pilih ukuran cetak, lalu download PNG atau PDF kertas Letter yang siap print, potong, dan lipat.</p>
   <div class="priv"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Diproses di browser, gambar tidak dikirim ke server</div>
 </div></header>
 
@@ -247,15 +247,15 @@ button,input{font:inherit;color:inherit}
     <section class="step" id="stSize">
       <h2><span class="n">2</span>Ukuran cetak</h2>
       <div class="tiles" id="size" role="group" aria-label="Ukuran QRIS">
-        <button class="tile" data-v="A4" aria-pressed="false">
+        <button class="tile" data-v="FULL" aria-pressed="false">
           <svg width="40" height="54" viewBox="0 0 40 54"><rect x="1" y="1" width="38" height="52" rx="2" fill="#FDB913" stroke="#0E2A47" stroke-width="1.5"/></svg>
-          <b>A4</b><small>1 per lembar</small></button>
+          <b>Full</b><small>sebesar kertas</small></button>
         <button class="tile" data-v="A5" aria-pressed="true">
           <svg width="54" height="40" viewBox="0 0 54 40"><rect x="1" y="1" width="52" height="38" rx="2" fill="#fff" stroke="#0E2A47" stroke-width="1.5"/><rect x="1.8" y="1.8" width="25.2" height="36.4" fill="#FDB913"/><line x1="27" y1="1" x2="27" y2="39" stroke="#0E2A47" stroke-width="1"/></svg>
-          <b>A5</b><small>½ A4</small></button>
+          <b>A5</b><small>5,81 × 8,4 in</small></button>
         <button class="tile" data-v="A6" aria-pressed="false">
           <svg width="40" height="54" viewBox="0 0 40 54"><rect x="1" y="1" width="38" height="52" rx="2" fill="#fff" stroke="#0E2A47" stroke-width="1.5"/><rect x="1.8" y="1.8" width="18.2" height="25.2" fill="#FDB913"/><line x1="20" y1="1" x2="20" y2="53" stroke="#0E2A47" stroke-width="1"/><line x1="1" y1="27" x2="39" y2="27" stroke="#0E2A47" stroke-width="1"/></svg>
-          <b>A6</b><small>¼ A4</small></button>
+          <b>A6</b><small>4 × 5,78 in</small></button>
       </div>
       <span class="lbl">Sisi cetak</span>
       <div class="tiles two" id="duplex" role="group" aria-label="Bolak-balik">
@@ -295,7 +295,7 @@ button,input{font:inherit;color:inherit}
   <main class="mat" id="mat">
     <div class="matbar" id="matbar" hidden>
       <div class="mtabs" id="tab" role="group" aria-label="Tampilan">
-        <button data-v="items" aria-pressed="true"><b>Gambar per QRIS</b> <span class="tsub">PNG</span></button><button data-v="pages" aria-pressed="false"><b>PDF siap print</b> <span class="tsub">kertas A4</span></button>
+        <button data-v="items" aria-pressed="true"><b>Gambar per QRIS</b> <span class="tsub">PNG</span></button><button data-v="pages" aria-pressed="false"><b>PDF siap print</b> <span class="tsub">kertas Letter</span></button>
       </div>
       <span class="ruler" id="ruler"></span>
       <span class="sp"></span>
@@ -343,8 +343,9 @@ const loadImage = src => new Promise((res,rej)=>{ const i=new Image(); i.onload=
 const sanitize = s => String(s).replace(/[\\/:*?"<>|\u0000-\u001f]/g,' ').replace(/\s+/g,' ').trim().replace(/[. ]+$/,'') || 'QRIS';
 const clip = (s, n=MAX_BASE) => s.length <= n ? s : s.slice(0, n).trim();
 const SUF = ' - Framed QRIS livin';
-const isDup = () => S.duplex && S.size !== 'A4';
-const printSuffix = () => ` - print A4 pdf${isDup()?' - bolak balik':''} - ${S.size}`;
+const isDup = () => S.duplex;
+const printDuplex = () => S.duplex && S.size !== 'A6';   // A5/Full: bolak-balik pakai printer 2 sisi
+const printSuffix = () => ` - print Letter pdf${isDup()?' - bolak balik':''} - ${SIZE_LABEL[S.size]}`;
 const pngName = it => clip(sanitize(it.name)) + SUF + '.png';
 const singlePdfName = it => clip(sanitize(it.name)) + SUF + printSuffix() + '.pdf';
 const bulkTag = (n, stamp) => `${n} framed QRIS livin bulk ${stamp}`;
@@ -406,28 +407,34 @@ function renderFramed(it, W){
 }
 const canvasBlob = (c, type, q) => new Promise(r=>c.toBlob(r, type, q));
 
-/* ===== susunan di kertas A4 (mm) ===== */
+/* ===== susunan di kertas Letter (mm) ===== */
+const IN = 25.4, LW = 8.5*IN, LH = 11*IN;           // Letter 8,5 x 11 inci
+const SIZE_LABEL = {FULL:'Full', A5:'A5', A6:'A6'};
 function layout(){
-  const items = S.items, size = S.size, dup = isDup(), pages = [];
-  if (size === 'A4'){
-    const h=297, w=h*AR;
-    items.forEach(it=>pages.push({orient:'p',W:210,H:297,slots:[{item:it,x:(210-w)/2,y:0,w,h}],folds:[]}));
-  } else if (size === 'A5'){                       // A4 mendatar, 2 sel 148.5 x 210
-    const cw=148.5, h=210, w=h*AR;
-    if (dup) items.forEach(it=>pages.push({orient:'l',W:297,H:210,slots:[{item:it,x:cw-w,y:0,w,h},{item:it,x:cw,y:0,w,h}],folds:[{x:cw,y1:0,y2:h}]}));
-    else for (let i=0;i<items.length;i+=2){ const s=[{item:items[i],x:cw-w,y:0,w,h}]; if(items[i+1]) s.push({item:items[i+1],x:cw,y:0,w,h}); pages.push({orient:'l',W:297,H:210,slots:s,folds:[]}); }
-  } else {                                         // A6: A4 tegak, 4 sel 105 x 148.5
-    const cw=105, ch=148.5, h=ch, w=h*AR;
-    if (dup){
-      for (let i=0;i<items.length;i+=2){ const pg={orient:'p',W:210,H:297,slots:[],folds:[]};
-        [items[i],items[i+1]].forEach((it,r)=>{ if(!it) return; const y=r*ch; pg.slots.push({item:it,x:cw-w,y,w,h},{item:it,x:cw,y,w,h}); pg.folds.push({x:cw,y1:y,y2:y+h}); });
-        pages.push(pg); }
-    } else {
-      const pos=[[cw-w,0],[cw,0],[cw-w,ch],[cw,ch]];
-      for (let i=0;i<items.length;i+=4){ const pg={orient:'p',W:210,H:297,slots:[],folds:[]};
-        for (let k=0;k<4;k++){ const it=items[i+k]; if(it) pg.slots.push({item:it,x:pos[k][0],y:pos[k][1],w,h}); }
+  const items = S.items, dup = isDup(), pages = [];
+  const P = () => ({W:LW, H:LH, slots:[], folds:[]});
+  if (S.size === 'A6'){                              // 4 x 5,78 inci
+    const w = 4*IN, h = 5.78*IN, bx = (LW-2*w)/2;
+    if (dup){                                        // lipat: 1 pasang per lembar
+      const y = (LH-h)/2;
+      items.forEach(it=>{ const pg=P(); pg.slots.push({item:it,x:bx,y,w,h},{item:it,x:bx+w,y,w,h}); pg.folds.push({x:bx+w,y1:y,y2:y+h}); pages.push(pg); });
+    } else {                                         // 2 tegak + 1 mendatar
+      const y0 = (LH-(h+w))/2;
+      const pos = [{x:bx,y:y0,w,h},{x:bx+w,y:y0,w,h},{x:bx,y:y0+h,w:h,h:w,rot:true}];
+      for (let i=0;i<items.length;i+=3){ const pg=P();
+        for (let k=0;k<3;k++){ const it=items[i+k]; if(it) pg.slots.push({item:it,...pos[k]}); }
         pages.push(pg); }
     }
+  } else {                                           // A5 = lebar 5,81 inci, Full = sebesar mungkin
+    const w = S.size==='A5' ? 5.81*IN : (LH-0.5*IN)*AR, h = w/AR;
+    const x = (LW-w)/2, y = (LH-h)/2;
+    items.forEach((it,k)=>{
+      const f=P(); f.slots.push({item:it,x,y,w,h});
+      if (dup){                                      // cetak 2 sisi printer: depan & belakang
+        f.grp=k; f.side='Depan'; pages.push(f);
+        const b=P(); b.slots.push({item:it,x,y,w,h}); b.grp=k; b.side='Belakang'; pages.push(b);
+      } else pages.push(f);
+    });
   }
   pages.forEach(addCuts);
   return pages;
@@ -455,19 +462,25 @@ async function buildPdf(pages, title, onStep){
     const pg = pages[p];
     const page = doc.addPage([pg.W*MM2PT, pg.H*MM2PT]);
     for (const s of pg.slots){
-      if (!cache.has(s.item.id)){
-        const px = Math.min(2480, Math.round(s.w/25.4*300));       // 300 dpi untuk ukuran cetak
-        const blob = await canvasBlob(renderFramed(s.item, px), 'image/jpeg', 0.92);
-        cache.set(s.item.id, await doc.embedJpg(await blob.arrayBuffer()));
+      const key = s.item.id + (s.rot?'r':'');
+      if (!cache.has(key)){
+        const px = Math.min(2480, Math.round((s.rot?s.h:s.w)/25.4*300));   // 300 dpi untuk ukuran cetak
+        let cv = renderFramed(s.item, px); if (s.rot) cv = rotCanvas(cv);
+        const blob = await canvasBlob(cv, 'image/jpeg', 0.92);
+        cache.set(key, await doc.embedJpg(await blob.arrayBuffer()));
       }
-      page.drawImage(cache.get(s.item.id), {x:s.x*MM2PT, y:(pg.H-s.y-s.h)*MM2PT, width:s.w*MM2PT, height:s.h*MM2PT});
+      page.drawImage(cache.get(key), {x:s.x*MM2PT, y:(pg.H-s.y-s.h)*MM2PT, width:s.w*MM2PT, height:s.h*MM2PT});
     }
+    // garis bantu gunting tipis di tepi luar tiap QRIS
+    pg.slots.forEach(s=>page.drawRectangle({x:s.x*MM2PT, y:(pg.H-s.y-s.h)*MM2PT, width:s.w*MM2PT, height:s.h*MM2PT, borderColor:rgb(.55,.55,.55), borderWidth:0.5}));
     (pg.cuts||[]).forEach(c=>page.drawLine({start:{x:c.x1*MM2PT,y:(pg.H-c.y1)*MM2PT}, end:{x:c.x2*MM2PT,y:(pg.H-c.y2)*MM2PT}, thickness:CUT_MM*MM2PT, color:rgb(1,1,1)}));
     pg.folds.forEach(f=>page.drawLine({start:{x:f.x*MM2PT,y:(pg.H-f.y1)*MM2PT}, end:{x:f.x*MM2PT,y:(pg.H-f.y2)*MM2PT}, thickness:1, color:rgb(.25,.25,.25), dashArray:[6,4.5]}));
     if (onStep){ onStep(p+1); await tick(); }
   }
   return new Blob([await doc.save()], {type:'application/pdf'});
 }
+function rotCanvas(c){ const r=document.createElement('canvas'); r.width=c.height; r.height=c.width;
+  const x=r.getContext('2d'); x.translate(0, r.height); x.rotate(-Math.PI/2); x.drawImage(c,0,0); return r; }
 const pngBlob = it => canvasBlob(renderFramed(it, FRAME_W), 'image/png');
 
 /* ===== download & toast ===== */
@@ -522,12 +535,14 @@ $('fmt').addEventListener('click', e=>{ const b=e.target.closest('button'); if(!
   if (S.fmt!=='both'){ S.tab = S.fmt==='pdf'?'pages':'items'; setPressed('tab', S.tab); }
   render(); });
 
+const DUP_NOTE = ' Cetak pakai setting printer “Cetak 2 sisi / Print on both sides” (balik di sisi panjang): halaman Depan & Belakang jadi satu lembar.';
 const HINTS = {
-  A4:  'QRIS ukuran penuh A4, 1 QRIS per lembar. Bolak-balik tidak tersedia untuk A4 karena butuh kertas A3.',
-  A5:  'Kertas A4 diputar mendatar, muat 2 QRIS yang dirapatkan di tengah. Gunting di garis putih di antaranya.',
-  A5d: 'Kertas A4 mendatar, 1 QRIS bolak-balik per lembar. Lipat di garis putus-putus.',
-  A6:  'Muat 4 QRIS per lembar A4, dirapatkan tanpa jarak. Gunting di garis putih di antara QRIS.',
-  A6d: 'Muat 2 QRIS bolak-balik per lembar A4. Gunting di garis putih (atas & bawah), lalu lipat di garis putus-putus.'
+  FULL:  'QRIS sebesar mungkin di kertas Letter, 1 per lembar. Gunting di garis abu-abu tipis.',
+  FULLd: 'QRIS sebesar mungkin, bolak-balik.'+DUP_NOTE,
+  A5:    'Ukuran 5,81 × 8,4 inci, 1 QRIS per lembar Letter (2 tidak muat). Gunting di garis abu-abu tipis.',
+  A5d:   'Ukuran 5,81 × 8,4 inci, bolak-balik.'+DUP_NOTE,
+  A6:    'Ukuran 4 × 5,78 inci, 3 QRIS per lembar Letter: 2 tegak + 1 mendatar (setelah digunting sama saja). Gunting di garis putih & abu-abu.',
+  A6d:   'Ukuran 4 × 5,78 inci, 1 QRIS bolak-balik per lembar Letter. Gunting di garis abu-abu, lalu lipat di garis putus-putus.'
 };
 
 const collator = new Intl.Collator('id', {numeric:true, sensitivity:'base'});
@@ -542,8 +557,7 @@ $('sort').onchange = e=>{ S.sort=e.target.value; S.selPages.clear(); render(); }
 function render(){
   applySort();
   const dupBtn = $('duplex').querySelector('[data-v="1"]');
-  dupBtn.disabled = S.size==='A4';
-  if (S.size==='A4' && S.duplex){ S.duplex=false; setPressed('duplex','0'); }
+  dupBtn.disabled = false;
   $('layoutHint').textContent = HINTS[S.size + (isDup()?'d':'')];
   $('cnt').textContent = S.items.length;
   $('clear').disabled = !S.items.length;
@@ -555,14 +569,14 @@ function render(){
   const v = $('view'); v.innerHTML='';
   $('matbar').hidden = !S.items.length;
   if (!S.items.length){
-    v.innerHTML = `<label class="empty" id="emptyDrop" for="file"><div class="ghost"><i></i></div><h3>Taruh gambar QRIS di sini</h3><p>Tarik satu atau banyak gambar QRIS ke area ini. Hasil frame dan susunan di kertas A4 langsung muncul.</p></label>`;
+    v.innerHTML = `<label class="empty" id="emptyDrop" for="file"><div class="ghost"><i></i></div><h3>Taruh gambar QRIS di sini</h3><p>Tarik satu atau banyak gambar QRIS ke area ini. Hasil frame dan susunan di kertas Letter langsung muncul.</p></label>`;
     wireDrop($('emptyDrop'));
   } else if (S.tab==='pages') renderPages(v, pages); else renderItems(v);
 
-  $('ruler').textContent = S.tab==='pages' ? `${pages.length} lembar A4 · ${S.items.length} QRIS` : `${S.items.length} gambar`;
+  $('ruler').textContent = S.tab==='pages' ? `${pages.length} halaman Letter · ${S.items.length} QRIS` : `${S.items.length} gambar`;
   const note = $('matNote'); note.hidden = !S.items.length;
   note.textContent = S.tab==='pages'
-    ? `Preview kertas A4 yang akan dicetak (QRIS ukuran ${S.size}${isDup()?', bolak-balik':''}). Klik lembar untuk mencentang.`
+    ? `Preview kertas Letter yang akan dicetak (QRIS ukuran ${SIZE_LABEL[S.size]}${isDup()?', bolak-balik':''}). Klik halaman untuk mencentang.`
     : 'Gambar QRIS + frame satu per satu (PNG), bukan format print. Nama QRIS bisa diubah di kotak nama.';
   $('selAll').checked = S.tab==='pages' ? (pages.length>0 && S.selPages.size===pages.length) : (S.items.length>0 && S.selItems.size===S.items.length);
 
@@ -599,17 +613,21 @@ function syncBar(plan){
   const n = plan.files.length, go = $('mbGo');
   go.disabled = !n;
   if (!n){ $('mbTitle').textContent='Belum ada yang dipilih'; $('mbSub').textContent='Centang QRIS/lembar, atau pilih “Semua”'; go.textContent='Download'; return; }
-  const kinds = S.fmt==='both' ? 'PNG + PDF' : S.fmt==='png' ? 'Gambar PNG' : `PDF A4 · QRIS ${S.size}${isDup()?' bolak-balik':''}`;
+  const kinds = S.fmt==='both' ? 'PNG + PDF' : S.fmt==='png' ? 'Gambar PNG' : `PDF Letter · QRIS ${SIZE_LABEL[S.size]}${isDup()?' bolak-balik':''}`;
   const pdfPages = plan.files.filter(f=>f.kind==='pdf').reduce((a,f)=>a+f.pages.length,0);
   const pngs = plan.files.filter(f=>f.kind==='png').length;
   $('mbTitle').textContent = kinds;
-  $('mbSub').textContent = [pngs?`${pngs} gambar`:'', pdfPages?`${pdfPages} lembar A4`:''].filter(Boolean).join(' + ') + (plan.zipName ? (S.pack==='sep'?' · satu per satu':' · ZIP') : '');
+  $('mbSub').textContent = [pngs?`${pngs} gambar`:'', pdfPages?`${pdfPages} halaman Letter`:''].filter(Boolean).join(' + ') + (plan.zipName ? (S.pack==='sep'?' · satu per satu':' · ZIP') : '');
   go.textContent = plan.zipName ? (S.pack==='sep'?'Download semua':'Download ZIP') : 'Download';
 }
 function drawSheet(pg){
   const sc = 3, c = document.createElement('canvas'); c.width=pg.W*sc; c.height=pg.H*sc;
   const x = c.getContext('2d'); x.fillStyle='#fff'; x.fillRect(0,0,c.width,c.height); x.imageSmoothingQuality='high';
-  pg.slots.forEach(s=>x.drawImage(s.item.thumb, s.x*sc, s.y*sc, s.w*sc, s.h*sc));
+  pg.slots.forEach(s=>{
+    if (s.rot){ x.save(); x.translate(s.x*sc,(s.y+s.h)*sc); x.rotate(-Math.PI/2); x.drawImage(s.item.thumb,0,0,s.h*sc,s.w*sc); x.restore(); }
+    else x.drawImage(s.item.thumb, s.x*sc, s.y*sc, s.w*sc, s.h*sc);
+  });
+  x.strokeStyle='#9a9a9a'; x.lineWidth=1; pg.slots.forEach(s=>x.strokeRect(s.x*sc, s.y*sc, s.w*sc, s.h*sc));
   x.strokeStyle='#fff'; x.lineWidth=Math.max(1.5, CUT_MM*sc); x.setLineDash([]);
   (pg.cuts||[]).forEach(c=>{ x.beginPath(); x.moveTo(c.x1*sc,c.y1*sc); x.lineTo(c.x2*sc,c.y2*sc); x.stroke(); });
   x.strokeStyle='#2a2a2a'; x.lineWidth=1.4; x.setLineDash([7,5]);
@@ -624,11 +642,13 @@ function renderPages(v, pages){
     const paper = document.createElement('div'); paper.className='paper'; paper.title='Klik untuk centang';
     paper.appendChild(drawSheet(pg));
     paper.onclick = ()=>toggleSel(S.selPages, i);
+    if (pg.side) paper.insertAdjacentHTML('beforeend', `<span class="tag">${pg.side}</span>`);
     const meta = document.createElement('div'); meta.className='meta';
-    meta.innerHTML = `<label class="ck"><input type="checkbox" ${sel?'checked':''}> Hal ${i+1}</label><span class="nm" title="${esc(its.map(t=>t.name).join(', '))}">${esc(its.map(t=>t.name).join(', '))}</span><button class="dl">Download PDF</button>`;
+    meta.innerHTML = `<label class="ck"><input type="checkbox" ${sel?'checked':''}> Hal ${i+1}${pg.side?' · '+pg.side:''}</label><span class="nm" title="${esc(its.map(t=>t.name).join(', '))}">${esc(its.map(t=>t.name).join(', '))}</span><button class="dl">Download PDF</button>`;
     meta.querySelector('input').onchange = ()=>toggleSel(S.selPages, i);
+    const grpPages = pg.grp!=null ? pages.filter(q=>q.grp===pg.grp) : [pg];
     meta.querySelector('.dl').onclick = async ()=>{ const name=pagePdfName(pg,i); toast('Membuat PDF…', .4);
-      try { save(await buildPdf([pg], name.replace(/\.pdf$/,'')), name); toastDone('PDF siap'); } catch(e){ console.error(e); toastDone('Gagal membuat PDF: '+e.message, true); } };
+      try { save(await buildPdf(grpPages, name.replace(/\.pdf$/,'')), name); toastDone('PDF siap'); } catch(e){ console.error(e); toastDone('Gagal membuat PDF: '+e.message, true); } };
     el.append(paper, meta); g.appendChild(el);
   });
   v.appendChild(g);
@@ -651,7 +671,10 @@ function renderItems(v){
   v.appendChild(g);
 }
 function toggleSel(set, key){
-  set.has(key) ? set.delete(key) : set.add(key);
+  const on = !set.has(key);
+  let keys = [key];
+  if (set===S.selPages){ const pgs=layout(); const g=pgs[key]&&pgs[key].grp; if (g!=null) keys = pgs.map((q,i)=>q.grp===g?i:-1).filter(i=>i>=0); }
+  keys.forEach(k=> on ? set.add(k) : set.delete(k));
   if (set.size && S.scope!=='sel'){ S.scope='sel'; setPressed('scope','sel'); }
   render();
 }
@@ -682,8 +705,8 @@ $('export').onclick = async ()=>{
     }
     const blobs = [];
     for (const f of plan.files){
-      if (f.kind==='pdf'){ const base=done; toast(`Membuat PDF… 0/${f.pages.length} lembar`, done/total);
-        blobs.push(await buildPdf(f.pages, f.name.replace(/\.pdf$/,''), k=>{ done=base+k; toast(`Membuat PDF… ${k}/${f.pages.length} lembar`, done/total); })); }
+      if (f.kind==='pdf'){ const base=done; toast(`Membuat PDF… 0/${f.pages.length} halaman`, done/total);
+        blobs.push(await buildPdf(f.pages, f.name.replace(/\.pdf$/,''), k=>{ done=base+k; toast(`Membuat PDF… ${k}/${f.pages.length} halaman`, done/total); })); }
       else { toast(`Membuat PNG… ${f.name}`, done/total); await tick(); blobs.push(await pngBlob(f.item)); done++; }
     }
     if (!plan.zipName){ save(blobs[0], plan.files[0].name); toastDone('Download dimulai'); }
